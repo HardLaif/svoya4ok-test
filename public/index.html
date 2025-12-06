@@ -3,18 +3,92 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🎮 Своя игра | Онлайн</title>
+    <title>🎮 Свояк нахуй</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
     <div id="app">
-        <!-- Уведомления будут здесь -->
+        <!-- Уведомления -->
         <div id="notifications"></div>
         
+        <!-- Анонимное сообщение -->
+        <div id="anonymous-message-modal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3><i class="fas fa-envelope"></i> Сообщение от ведущего</h3>
+                    <button class="close-btn" id="close-anonymous-message">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <p id="anonymous-message-text"></p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Модальное окно супер игры -->
+        <div id="super-game-modal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2><i class="fas fa-crown"></i> СУПЕР ИГРА</h2>
+                </div>
+                <div class="modal-body">
+                    <div class="winner-announcement">
+                        <div class="winner-avatar" id="winner-avatar">👑</div>
+                        <h3 id="winner-name">Игрок 1</h3>
+                        <div class="winner-score">
+                            Текущие баллы: <span id="winner-score">10</span>
+                        </div>
+                    </div>
+                    
+                    <div class="super-game-question">
+                        <h4>Вопрос для супер игры:</h4>
+                        <p id="super-game-question-text"></p>
+                    </div>
+                    
+                    <div class="super-game-options" id="super-game-options">
+                        <!-- Варианты ответов появятся здесь -->
+                    </div>
+                    
+                    <div class="modal-actions">
+                        <button id="decline-super-game-btn" class="btn btn-secondary">
+                            <i class="fas fa-times"></i> Отказаться
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Модальное окно загрузки аватарки -->
+        <div id="avatar-upload-modal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3><i class="fas fa-user-circle"></i> Загрузить аватарку</h3>
+                    <button class="close-btn" id="close-avatar-modal">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="avatar-upload-container">
+                        <div class="avatar-preview" id="avatar-preview">
+                            <div class="default-avatar">👤</div>
+                        </div>
+                        <input type="file" id="avatar-file-input" accept="image/*" hidden>
+                        <div class="avatar-upload-buttons">
+                            <button id="select-avatar-btn" class="btn btn-secondary">
+                                <i class="fas fa-folder-open"></i> Выбрать файл
+                            </button>
+                            <button id="upload-avatar-btn" class="btn btn-primary" disabled>
+                                <i class="fas fa-upload"></i> Загрузить
+                            </button>
+                        </div>
+                        <p class="help-text">Максимальный размер: 2MB</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Основной контейнер -->
         <div class="container">
             <header>
-                <h1><i class="fas fa-gamepad"></i> Своячок</h1>
+                <h1><i class="fas fa-gamepad"></i> Свояк Говнокодович</h1>
                 <p class="subtitle">Эщкере</p>
             </header>
             
@@ -26,22 +100,14 @@
                         <input type="text" id="username" placeholder="Ваше имя" value="Игрок">
                     </div>
                     
-                    <div class="avatar-selection">
-                        <label>Выберите аватар:</label>
-                        <div class="avatar-options">
-                            <div class="avatar-option selected" data-avatar="👑">
-                                <div class="avatar">👑</div>
-                            </div>
-                            <div class="avatar-option" data-avatar="👨‍💼">
-                                <div class="avatar">👨‍💼</div>
-                            </div>
-                            <div class="avatar-option" data-avatar="👩‍💼">
-                                <div class="avatar">👩‍💼</div>
-                            </div>
-                            <div class="avatar-option" data-avatar="🧑‍🎓">
-                                <div class="avatar">🧑‍🎓</div>
-                            </div>
+                    <div class="avatar-section">
+                        <label>Ваша аватарка:</label>
+                        <div class="current-avatar" id="current-avatar-display">
+                            <div class="avatar-img">👤</div>
                         </div>
+                        <button id="change-avatar-btn" class="btn btn-secondary btn-small">
+                            <i class="fas fa-camera"></i> Изменить аватарку
+                        </button>
                     </div>
                     
                     <h3><i class="fas fa-play-circle"></i> Начать игру</h3>
@@ -94,6 +160,19 @@
                         <div class="control-section">
                             <h3><i class="fas fa-question-circle"></i> Вопрос</h3>
                             <textarea id="question-input" placeholder="Введите вопрос..." rows="3"></textarea>
+                            
+                            <div class="image-upload-control">
+                                <input type="file" id="question-image-input" accept="image/*" hidden>
+                                <label for="question-image-input" class="btn btn-secondary">
+                                    <i class="fas fa-image"></i> Добавить картинку
+                                </label>
+                                <button id="remove-image-btn" class="btn btn-danger" style="display: none;">
+                                    <i class="fas fa-trash"></i> Убрать картинку
+                                </button>
+                            </div>
+                            
+                            <div id="image-preview" class="image-preview"></div>
+                            
                             <div class="button-row">
                                 <button id="show-question-btn" class="btn btn-primary">
                                     <i class="fas fa-eye"></i> Показать вопрос
@@ -105,26 +184,75 @@
                         </div>
                         
                         <div class="control-section">
-                            <h3><i class="fas fa-star"></i> Управление баллами</h3>
-                            <select id="player-select" class="player-select">
-                                <option value="">Выберите игрока</option>
-                            </select>
-                            <div class="button-row">
-                                <button id="add-point-btn" class="btn btn-success">
-                                    <i class="fas fa-plus"></i> +1
-                                </button>
-                                <button id="subtract-point-btn" class="btn btn-danger">
-                                    <i class="fas fa-minus"></i> -1
-                                </button>
-                                <button id="reset-player-btn" class="btn btn-warning">
-                                    <i class="fas fa-redo"></i> Сбросить
+                            <h3><i class="fas fa-trophy"></i> Супер игра</h3>
+                            <div class="super-game-controls">
+                                <textarea id="super-game-question-input" placeholder="Вопрос для супер игры..." rows="2"></textarea>
+                                
+                                <div class="super-game-options-input">
+                                    <h4>Варианты ответов:</h4>
+                                    <div class="options-grid">
+                                        <div class="option-input">
+                                            <label>А:</label>
+                                            <input type="text" id="option-a" placeholder="Вариант А">
+                                        </div>
+                                        <div class="option-input">
+                                            <label>Б:</label>
+                                            <input type="text" id="option-b" placeholder="Вариант Б">
+                                        </div>
+                                        <div class="option-input">
+                                            <label>В:</label>
+                                            <input type="text" id="option-c" placeholder="Вариант В">
+                                        </div>
+                                        <div class="option-input">
+                                            <label>Г:</label>
+                                            <input type="text" id="option-d" placeholder="Вариант Г">
+                                        </div>
+                                        <div class="option-input">
+                                            <label>Д:</label>
+                                            <input type="text" id="option-e" placeholder="Вариант Д">
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="correct-answer-select">
+                                        <label>Правильный ответ:</label>
+                                        <select id="correct-answer-select">
+                                            <option value="">Выберите</option>
+                                            <option value="A">А</option>
+                                            <option value="B">Б</option>
+                                            <option value="C">В</option>
+                                            <option value="D">Г</option>
+                                            <option value="E">Д</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                
+                                <button id="start-super-game-btn" class="btn btn-super">
+                                    <i class="fas fa-crown"></i> Начать супер игру
                                 </button>
                             </div>
                         </div>
                     </div>
                     
-                    <div class="players-list" id="host-players-list">
-                        <!-- Список игроков будет здесь -->
+                    <!-- Список игроков с кнопками управления -->
+                    <div class="players-section">
+                        <h3><i class="fas fa-users"></i> Игроки в комнате</h3>
+                        <div class="players-grid" id="host-players-list">
+                            <!-- Игроки будут добавлены здесь -->
+                        </div>
+                    </div>
+                    
+                    <!-- Анонимные сообщения -->
+                    <div class="anonymous-messages-section">
+                        <h3><i class="fas fa-envelope-secret"></i> Анонимное сообщение</h3>
+                        <div class="anonymous-message-controls">
+                            <select id="anonymous-message-player-select">
+                                <option value="">Выберите игрока</option>
+                            </select>
+                            <textarea id="anonymous-message-input" placeholder="Введите анонимное сообщение..." rows="2"></textarea>
+                            <button id="send-anonymous-message-btn" class="btn btn-warning">
+                                <i class="fas fa-paper-plane"></i> Отправить анонимно
+                            </button>
+                        </div>
                     </div>
                 </div>
                 
@@ -139,32 +267,46 @@
                     </div>
                     
                     <div class="player-main">
-                        <button id="buzzer-btn" class="buzzer-btn" disabled>
-                            <i class="fas fa-bell"></i>
-                            <span class="buzzer-text">Хочу ответить бля!</span>
-                        </button>
+                        <div class="player-avatar-large" id="player-avatar-large">
+                            <div class="avatar-img">👤</div>
+                            <button id="change-player-avatar-btn" class="btn-change-avatar">
+                                <i class="fas fa-camera"></i>
+                            </button>
+                        </div>
                         
-                        <div class="buzzer-status" id="buzzer-status">
-                            Ждите, когда ведущий покажет вопрос
+                        <div class="buzzer-container">
+                            <button id="buzzer-btn" class="buzzer-btn" disabled>
+                                <i class="fas fa-bell"></i>
+                                <span class="buzzer-text">ОЖИДАНИЕ ВОПРОСА</span>
+                            </button>
+                            
+                            <div class="buzzer-status" id="buzzer-status">
+                                Ждите, когда ведущий покажет вопрос
+                            </div>
                         </div>
                     </div>
                     
-                    <div class="players-list" id="player-players-list">
-                        <!-- Список игроков будет здесь -->
+                    <!-- Область вопроса -->
+                    <div id="question-area" class="question-area hidden">
+                        <h3><i class="fas fa-question-circle"></i> Текущий вопрос</h3>
+                        <div id="question-display" class="question-display">
+                            Вопрос появится здесь...
+                        </div>
+                        <div id="question-image-display" class="question-image-display"></div>
                     </div>
-                </div>
-                
-                <!-- Область вопроса -->
-                <div id="question-area" class="question-area hidden">
-                    <h3><i class="fas fa-question-circle"></i> Текущий вопрос</h3>
-                    <div id="question-display" class="question-display">
-                        Вопрос появится здесь...
+                    
+                    <!-- Список игроков -->
+                    <div class="players-section">
+                        <h3><i class="fas fa-users"></i> Другие игроки</h3>
+                        <div class="players-grid" id="player-players-list">
+                            <!-- Игроки будут добавлены здесь -->
+                        </div>
                     </div>
                 </div>
                 
                 <!-- Чат -->
-                <div id="chat-container" class="chat-container hidden">
-                    <h3><i class="fas fa-comments"></i> Чат</h3>
+                <div id="chat-container" class="chat-container">
+                    <h3><i class="fas fa-comments"></i> Чат комнаты</h3>
                     <div class="chat-messages" id="chat-messages"></div>
                     <div class="chat-input">
                         <input type="text" id="chat-input" placeholder="Введите сообщение...">
@@ -185,4 +327,3 @@
     <script src="client.js"></script>
 </body>
 </html>
-
