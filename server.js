@@ -438,7 +438,7 @@ class GameServer {
     start() {
         this.server.listen(this.port, () => {
             console.log(`=====================================`);
-            console.log(`🎮 "Своя игра" с расширенными возможностями запущена!`);
+            console.log(`🎮 "Своя игра" запущена!`);
             console.log(`📍 Порт: ${this.port}`);
             console.log(`=====================================`);
         });
