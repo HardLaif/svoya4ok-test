@@ -12,14 +12,14 @@ class GameServer {
         // Конфигурация Socket.io для Render
         this.io = socketIo(this.server, {
             cors: {
-                origin: "*", // Для продакшена замените на ваш домен Render
+                origin: "*",
                 methods: ["GET", "POST"]
             },
             transports: ['websocket', 'polling']
         });
         
         this.gameManager = new GameManager();
-        this.port = process.env.PORT || 3000; // Render сам назначит порт
+        this.port = process.env.PORT || 3000;
         
         this.setupMiddleware();
         this.setupRoutes();
@@ -31,7 +31,6 @@ class GameServer {
         this.app.use(express.json());
         this.app.use(express.static(path.join(__dirname, 'public')));
         
-        // Логирование запросов
         this.app.use((req, res, next) => {
             console.log(`${new Date().toISOString()} ${req.method} ${req.url}`);
             next();
@@ -39,7 +38,6 @@ class GameServer {
     }
     
     setupRoutes() {
-        // API для проверки статуса
         this.app.get('/api/status', (req, res) => {
             res.json({
                 status: 'ok',
@@ -48,7 +46,6 @@ class GameServer {
             });
         });
         
-        // Все остальные маршруты ведут на клиент
         this.app.get('*', (req, res) => {
             res.sendFile(path.join(__dirname, 'public', 'index.html'));
         });
@@ -59,7 +56,7 @@ class GameServer {
             console.log(`Новый пользователь: ${socket.id}`);
             
             // Создание комнаты
-            socket.on('create-room', (data, callback) => {
+            socket.on('create-room', (data) => {
                 try {
                     const room = this.gameManager.createRoom(socket.id, data);
                     socket.join(room.id);
@@ -70,7 +67,7 @@ class GameServer {
                         playerId: socket.id
                     };
                     
-                    callback({
+                    socket.emit('create-room-response', {
                         success: true,
                         roomId: room.id,
                         hostId: socket.id,
@@ -79,12 +76,15 @@ class GameServer {
                     
                     console.log(`Создана комната ${room.id}`);
                 } catch (error) {
-                    callback({ success: false, error: error.message });
+                    socket.emit('create-room-response', {
+                        success: false,
+                        error: error.message
+                    });
                 }
             });
             
             // Присоединение к комнате
-            socket.on('join-room', (data, callback) => {
+            socket.on('join-room', (data) => {
                 try {
                     const roomId = data.roomId.toUpperCase();
                     const player = this.gameManager.addPlayerToRoom(
@@ -114,7 +114,7 @@ class GameServer {
                     });
                     
                     // Отправляем состояние комнаты новому игроку
-                    callback({
+                    socket.emit('join-room-response', {
                         success: true,
                         roomId: roomId,
                         playerId: socket.id,
@@ -131,7 +131,10 @@ class GameServer {
                     
                     console.log(`Игрок ${player.name} в комнате ${roomId}`);
                 } catch (error) {
-                    callback({ success: false, error: error.message });
+                    socket.emit('join-room-response', {
+                        success: false,
+                        error: error.message
+                    });
                 }
             });
             
@@ -146,11 +149,14 @@ class GameServer {
                 room.gameState.question = data.question;
                 room.gameState.image = data.image;
                 room.gameState.buzzerEnabled = true;
+                room.gameState.activePlayer = null;
                 
                 this.io.to(socketData.roomId).emit('question-shown', {
                     question: data.question,
                     image: data.image
                 });
+                
+                socket.emit('show-question-response', { success: true });
             });
             
             // Ведущий скрывает вопрос
@@ -162,10 +168,12 @@ class GameServer {
                 if (!room) return;
                 
                 room.gameState.question = '';
+                room.gameState.image = null;
                 room.gameState.buzzerEnabled = false;
                 room.gameState.activePlayer = null;
                 
                 this.io.to(socketData.roomId).emit('question-hidden');
+                socket.emit('hide-question-response', { success: true });
             });
             
             // Игрок нажимает на кнопку
@@ -174,7 +182,10 @@ class GameServer {
                 if (!socketData || socketData.isHost) return;
                 
                 const room = this.gameManager.getRoom(socketData.roomId);
-                if (!room || !room.gameState.buzzerEnabled || room.gameState.activePlayer) return;
+                if (!room || !room.gameState.buzzerEnabled || room.gameState.activePlayer) {
+                    socket.emit('buzzer-error', { message: 'Невозможно ответить сейчас' });
+                    return;
+                }
                 
                 room.gameState.activePlayer = socket.id;
                 room.gameState.buzzerEnabled = false;
@@ -184,15 +195,23 @@ class GameServer {
                     playerId: socket.id,
                     playerName: player.name
                 });
+                
+                socket.emit('buzzer-success', { message: 'Вы нажали на кнопку!' });
             });
             
             // Изменение баллов
             socket.on('adjust-score', (data) => {
                 const socketData = socket.data;
-                if (!socketData?.isHost) return;
+                if (!socketData?.isHost) {
+                    socket.emit('adjust-score-error', { message: 'Только ведущий может менять баллы' });
+                    return;
+                }
                 
                 const room = this.gameManager.getRoom(socketData.roomId);
-                if (!room || !room.players[data.playerId]) return;
+                if (!room || !room.players[data.playerId]) {
+                    socket.emit('adjust-score-error', { message: 'Игрок не найден' });
+                    return;
+                }
                 
                 const player = room.players[data.playerId];
                 player.score += data.delta;
@@ -204,15 +223,23 @@ class GameServer {
                     score: player.score,
                     delta: data.delta
                 });
+                
+                socket.emit('adjust-score-response', { success: true });
             });
             
             // Сброс баллов
             socket.on('reset-player-score', (data) => {
                 const socketData = socket.data;
-                if (!socketData?.isHost) return;
+                if (!socketData?.isHost) {
+                    socket.emit('reset-score-error', { message: 'Только ведущий может сбрасывать баллы' });
+                    return;
+                }
                 
                 const room = this.gameManager.getRoom(socketData.roomId);
-                if (!room || !room.players[data.playerId]) return;
+                if (!room || !room.players[data.playerId]) {
+                    socket.emit('reset-score-error', { message: 'Игрок не найден' });
+                    return;
+                }
                 
                 room.players[data.playerId].score = 0;
                 room.gameState.activePlayer = null;
@@ -221,27 +248,38 @@ class GameServer {
                 this.io.to(socketData.roomId).emit('player-score-reset', {
                     playerId: data.playerId
                 });
+                
+                socket.emit('reset-score-response', { success: true });
             });
             
             // Запуск супер игры
             socket.on('start-super-game', (data) => {
                 const socketData = socket.data;
-                if (!socketData?.isHost) return;
+                if (!socketData?.isHost) {
+                    socket.emit('super-game-error', { message: 'Только ведущий может начать супер игру' });
+                    return;
+                }
                 
                 const room = this.gameManager.getRoom(socketData.roomId);
-                if (!room) return;
+                if (!room) {
+                    socket.emit('super-game-error', { message: 'Комната не найдена' });
+                    return;
+                }
                 
                 let winner = null;
                 let maxScore = -Infinity;
                 
                 for (const player of Object.values(room.players)) {
-                    if (player.score > maxScore && !player.isHost) {
+                    if (!player.isHost && player.score > maxScore) {
                         maxScore = player.score;
                         winner = player;
                     }
                 }
                 
-                if (!winner || maxScore <= 0) return;
+                if (!winner || maxScore <= 0) {
+                    socket.emit('super-game-error', { message: 'Нет подходящего победителя' });
+                    return;
+                }
                 
                 this.io.to(socketData.roomId).emit('super-game-offered', {
                     winner: {
@@ -252,6 +290,8 @@ class GameServer {
                     question: data.question,
                     image: data.image
                 });
+                
+                socket.emit('start-super-game-response', { success: true });
             });
             
             // Результат супер игры
@@ -326,8 +366,7 @@ class GameServer {
         this.server.listen(this.port, () => {
             console.log(`=====================================`);
             console.log(`🎮 "Своя игра" запущена!`);
-            console.log(`📍 Локально: http://localhost:${this.port}`);
-            console.log(`📡 WebSocket: ws://localhost:${this.port}`);
+            console.log(`📍 Порт: ${this.port}`);
             console.log(`=====================================`);
         });
     }
@@ -372,9 +411,11 @@ class GameManager {
     addPlayerToRoom(roomId, playerId, playerData) {
         const room = this.rooms.get(roomId);
         if (!room) throw new Error('Комната не найдена');
+        
         if (Object.keys(room.players).length >= this.MAX_PLAYERS) {
             throw new Error('В комнате уже максимальное количество игроков');
         }
+        
         if (room.players[playerId]) {
             throw new Error('Игрок уже в комнате');
         }
@@ -406,7 +447,12 @@ class GameManager {
         for (let i = 0; i < 6; i++) {
             result += chars.charAt(Math.floor(Math.random() * chars.length));
         }
-        return this.rooms.has(result) ? this.generateRoomId() : result;
+        
+        if (this.rooms.has(result)) {
+            return this.generateRoomId();
+        }
+        
+        return result;
     }
     
     getRandomColor() {
