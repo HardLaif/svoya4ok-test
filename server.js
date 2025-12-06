@@ -9,7 +9,6 @@ class GameServer {
         this.app = express();
         this.server = http.createServer(this.app);
         
-        // Конфигурация Socket.io для Render
         this.io = socketIo(this.server, {
             cors: {
                 origin: "*",
@@ -28,7 +27,7 @@ class GameServer {
     
     setupMiddleware() {
         this.app.use(cors());
-        this.app.use(express.json());
+        this.app.use(express.json({ limit: '10mb' }));
         this.app.use(express.static(path.join(__dirname, 'public')));
         
         this.app.use((req, res, next) => {
@@ -199,8 +198,8 @@ class GameServer {
                 socket.emit('buzzer-success', { message: 'Вы нажали на кнопку!' });
             });
             
-            // Изменение баллов
-            socket.on('adjust-score', (data) => {
+            // Изменение баллов игрока (новый формат)
+            socket.on('adjust-player-score', (data) => {
                 const socketData = socket.data;
                 if (!socketData?.isHost) {
                     socket.emit('adjust-score-error', { message: 'Только ведущий может менять баллы' });
@@ -223,11 +222,9 @@ class GameServer {
                     score: player.score,
                     delta: data.delta
                 });
-                
-                socket.emit('adjust-score-response', { success: true });
             });
             
-            // Сброс баллов
+            // Сброс баллов игрока
             socket.on('reset-player-score', (data) => {
                 const socketData = socket.data;
                 if (!socketData?.isHost) {
@@ -248,8 +245,6 @@ class GameServer {
                 this.io.to(socketData.roomId).emit('player-score-reset', {
                     playerId: data.playerId
                 });
-                
-                socket.emit('reset-score-response', { success: true });
             });
             
             // Запуск супер игры
@@ -266,6 +261,7 @@ class GameServer {
                     return;
                 }
                 
+                // Находим победителя
                 let winner = null;
                 let maxScore = -Infinity;
                 
@@ -281,6 +277,18 @@ class GameServer {
                     return;
                 }
                 
+                // Сохраняем данные супер игры
+                room.gameState.superGame = {
+                    active: true,
+                    question: data.question,
+                    options: data.options,
+                    correctAnswer: data.correctAnswer,
+                    winnerId: winner.id,
+                    winnerName: winner.name,
+                    currentScore: winner.score
+                };
+                
+                // Отправляем предложение супер игры всем
                 this.io.to(socketData.roomId).emit('super-game-offered', {
                     winner: {
                         id: winner.id,
@@ -288,33 +296,98 @@ class GameServer {
                         score: winner.score
                     },
                     question: data.question,
-                    image: data.image
+                    options: data.options
+                });
+                
+                // Отправляем подробности только победителю
+                this.io.to(winner.id).emit('super-game-details', {
+                    options: data.options,
+                    correctAnswer: data.correctAnswer
                 });
                 
                 socket.emit('start-super-game-response', { success: true });
             });
             
-            // Результат супер игры
-            socket.on('super-game-result', (data) => {
+            // Игрок выбирает ответ в супер игре
+            socket.on('super-game-answer', (data) => {
+                const socketData = socket.data;
+                if (!socketData) return;
+                
+                const room = this.gameManager.getRoom(socketData.roomId);
+                if (!room || !room.gameState.superGame?.active) return;
+                
+                // Проверяем, что отвечает правильный игрок
+                if (socket.id !== room.gameState.superGame.winnerId) return;
+                
+                const isCorrect = data.answer === room.gameState.superGame.correctAnswer;
+                
+                if (isCorrect) {
+                    // Удваиваем баллы
+                    room.players[socket.id].score *= 2;
+                    
+                    this.io.to(socketData.roomId).emit('super-game-success', {
+                        playerId: socket.id,
+                        newScore: room.players[socket.id].score,
+                        correctAnswer: room.gameState.superGame.correctAnswer
+                    });
+                } else {
+                    this.io.to(socketData.roomId).emit('super-game-failed', {
+                        playerId: socket.id,
+                        correctAnswer: room.gameState.superGame.correctAnswer
+                    });
+                }
+                
+                // Завершаем супер игру
+                room.gameState.superGame.active = false;
+            });
+            
+            // Игрок отказывается от супер игры
+            socket.on('decline-super-game', () => {
+                const socketData = socket.data;
+                if (!socketData) return;
+                
+                const room = this.gameManager.getRoom(socketData.roomId);
+                if (!room || !room.gameState.superGame?.active) return;
+                
+                if (socket.id !== room.gameState.superGame.winnerId) return;
+                
+                this.io.to(socketData.roomId).emit('super-game-declined', {
+                    playerId: socket.id
+                });
+                
+                room.gameState.superGame.active = false;
+            });
+            
+            // Ведущий отправляет анонимное сообщение игроку
+            socket.on('send-anonymous-message', (data) => {
                 const socketData = socket.data;
                 if (!socketData?.isHost) return;
                 
                 const room = this.gameManager.getRoom(socketData.roomId);
-                if (!room || !room.players[data.playerId]) return;
+                if (!room || !room.players[data.toPlayerId]) return;
                 
-                const player = room.players[data.playerId];
+                // Отправляем сообщение только указанному игроку
+                this.io.to(data.toPlayerId).emit('anonymous-message', {
+                    message: data.message,
+                    fromHost: true
+                });
+            });
+            
+            // Обновление аватарки
+            socket.on('update-avatar', (data) => {
+                const socketData = socket.data;
+                if (!socketData) return;
                 
-                if (data.success) {
-                    player.score *= 2;
-                    this.io.to(socketData.roomId).emit('super-game-success', {
-                        playerId: data.playerId,
-                        newScore: player.score
-                    });
-                } else {
-                    this.io.to(socketData.roomId).emit('super-game-ended', {
-                        playerId: data.playerId
-                    });
-                }
+                const room = this.gameManager.getRoom(socketData.roomId);
+                if (!room || !room.players[socket.id]) return;
+                
+                room.players[socket.id].avatar = data.avatar;
+                
+                // Уведомляем всех об обновлении аватарки
+                this.io.to(socketData.roomId).emit('avatar-updated', {
+                    playerId: socket.id,
+                    avatar: data.avatar
+                });
             });
             
             // Чат
@@ -365,7 +438,7 @@ class GameServer {
     start() {
         this.server.listen(this.port, () => {
             console.log(`=====================================`);
-            console.log(`🎮 "Своя игра" запущена!`);
+            console.log(`🎮 "Своя игра" с расширенными возможностями запущена!`);
             console.log(`📍 Порт: ${this.port}`);
             console.log(`=====================================`);
         });
@@ -390,7 +463,8 @@ class GameManager {
                 question: '',
                 image: null,
                 buzzerEnabled: false,
-                activePlayer: null
+                activePlayer: null,
+                superGame: null
             },
             createdAt: Date.now()
         };
