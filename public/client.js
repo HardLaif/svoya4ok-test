@@ -87,7 +87,7 @@ class GameClient {
         this.socket.on('player-joined', (data) => {
             this.gameState.players[data.player.id] = data.player;
             this.updatePlayersList();
-            this.showNotification(`${data.player.name} присоединился(ась)`, 'success');
+            this.showNotification(`${data.player.name} здарова!`, 'success');
             
             if (this.isHost) {
                 this.updateAnonymousMessagePlayersList();
@@ -543,7 +543,6 @@ class GameClient {
         const optionB = document.getElementById('option-b').value;
         const optionC = document.getElementById('option-c').value;
         const optionD = document.getElementById('option-d').value;
-        const optionE = document.getElementById('option-e').value;
         const correctAnswer = document.getElementById('correct-answer-select').value;
         
         if (!question.trim() || !optionA.trim() || !correctAnswer) {
@@ -556,7 +555,6 @@ class GameClient {
             B: optionB,
             C: optionC,
             D: optionD,
-            E: optionE
         };
         
         this.socket.emit('start-super-game', {
@@ -885,3 +883,4 @@ class GameClient {
 document.addEventListener('DOMContentLoaded', () => {
     window.gameClient = new GameClient();
 });
+
