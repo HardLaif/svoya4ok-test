@@ -1,341 +1,82 @@
 <!DOCTYPE html>
 <html lang="ru">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>🎮 Своя игра | Онлайн версия</title>
-    <link rel="stylesheet" href="style.css" />
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
-    />
-  </head>
-  <body>
-    <!-- Экран подключения -->
-    <div id="connection-screen" class="screen active">
-      <div class="connection-container">
-        <div class="header">
-          <h1><i class="fas fa-gamepad"></i> Своячок Говнокодович</h1>
-          <p class="subtitle">Эщкере</p>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎮 Своя игра | Онлайн</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div id="app">
+        <div class="container">
+            <header>
+                <h1><i class="fas fa-gamepad"></i> Своячок</h1>
+                <p class="subtitle">Эщкере</p>
+            </header>
+            
+            <div id="connection-screen" class="screen active">
+                <div class="card">
+                    <h2><i class="fas fa-user"></i> Ваш профиль</h2>
+                    <div class="form-group">
+                        <input type="text" id="username" placeholder="Ваше имя" value="Игрок">
+                    </div>
+                    
+                    <h3><i class="fas fa-users"></i> Начать игру</h3>
+                    <div class="button-group">
+                        <button id="create-room-btn" class="btn btn-primary">
+                            <i class="fas fa-plus-circle"></i> Создать комнату
+                        </button>
+                        
+                        <div class="divider">или</div>
+                        
+                        <div class="join-section">
+                            <input type="text" id="room-code" placeholder="Код комнаты" maxlength="6">
+                            <button id="join-room-btn" class="btn btn-success">
+                                <i class="fas fa-sign-in-alt"></i> Присоединиться
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div id="room-info" class="room-info hidden">
+                        <h3><i class="fas fa-check-circle"></i> Комната создана!</h3>
+                        <div class="room-code">
+                            Код: <span id="room-code-display">ABCD12</span>
+                            <button id="copy-code-btn" class="btn btn-secondary">
+                                <i class="fas fa-copy"></i> Копировать
+                            </button>
+                        </div>
+                        <button id="enter-room-btn" class="btn btn-primary">
+                            <i class="fas fa-play"></i> Войти в комнату
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="game-screen" class="screen">
+                <div class="game-header">
+                    <div id="host-panel" class="panel hidden">
+                        <h2><i class="fas fa-crown"></i> Вы - Ведущий</h2>
+                        <div class="room-code">Комната: <span id="current-room-code">ABCD12</span></div>
+                    </div>
+                    
+                    <div id="player-panel" class="panel hidden">
+                        <h2><i class="fas fa-user"></i> Вы - Игрок</h2>
+                        <div class="score">Баллы: <span id="player-score">0</span></div>
+                    </div>
+                </div>
+                
+                <div class="game-container">
+                    <!-- Игровая логика будет добавляться через JavaScript -->
+                    <div id="players-container"></div>
+                    <div id="question-container"></div>
+                    <div id="chat-container"></div>
+                </div>
+            </div>
         </div>
-
-        <div class="connection-form">
-          <div class="form-section">
-            <h2><i class="fas fa-user"></i> Ваш профиль</h2>
-            <div class="form-group">
-              <label for="username">Имя:</label>
-              <input
-                type="text"
-                id="username"
-                placeholder="Введите ваше имя"
-                value="Игрок"
-              />
-            </div>
-
-            <div class="avatar-selection">
-              <label>Выберите аватар:</label>
-              <div class="avatar-grid">
-                <div class="avatar-option selected" data-avatar="👨‍💼">
-                  <div class="avatar">👨‍💼</div>
-                </div>
-                <div class="avatar-option" data-avatar="👩‍💼">
-                  <div class="avatar">👩‍💼</div>
-                </div>
-                <div class="avatar-option" data-avatar="🧑‍🎓">
-                  <div class="avatar">🧑‍🎓</div>
-                </div>
-                <div class="avatar-option" data-avatar="👨‍🔬">
-                  <div class="avatar">👨‍🔬</div>
-                </div>
-                <div class="avatar-option" data-avatar="👩‍🎨">
-                  <div class="avatar">👩‍🎨</div>
-                </div>
-                <div class="avatar-option" data-avatar="🧙‍♂️">
-                  <div class="avatar">🧙‍♂️</div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="action-buttons">
-            <button id="create-room-btn" class="btn btn-primary btn-large">
-              <i class="fas fa-plus-circle"></i> Создать игру (Ведущий)
-            </button>
-
-            <div class="divider">
-              <span>или</span>
-            </div>
-
-            <div class="join-section">
-              <h3><i class="fas fa-user-plus"></i> Присоединиться к игре</h3>
-              <div class="join-form">
-                <input
-                  type="text"
-                  id="room-code"
-                  placeholder="Введите код комнаты"
-                  maxlength="6"
-                />
-                <button id="join-room-btn" class="btn btn-success">
-                  Присоединиться
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <div id="room-info" class="room-info hidden">
-            <div class="success-message">
-              <i class="fas fa-check-circle"></i>
-              <h3>Комната создана!</h3>
-            </div>
-            <div class="room-code-display">
-              <label>Код комнаты:</label>
-              <div class="code" id="room-code-display">ABCD12</div>
-              <button id="copy-code-btn" class="btn btn-secondary">
-                <i class="fas fa-copy"></i> Копировать
-              </button>
-            </div>
-            <p class="instruction">
-              Отправьте этот код друзьям для присоединения
-            </p>
-            <button id="enter-room-btn" class="btn btn-primary">
-              <i class="fas fa-play"></i> Войти в комнату
-            </button>
-          </div>
-        </div>
-
-        <div class="server-status">
-          <div class="status-indicator connected">
-            <div class="status-dot"></div>
-            <span>Сервер подключен</span>
-          </div>
-          <div class="stats">
-            <span id="online-count">0</span> игроков онлайн
-          </div>
-        </div>
-      </div>
     </div>
-
-    <!-- Игровой экран -->
-    <div id="game-screen" class="screen">
-      <!-- Панель ведущего -->
-      <div id="host-panel" class="host-panel">
-        <div class="host-header">
-          <div class="host-info">
-            <div class="host-avatar" id="host-avatar">👨‍💼</div>
-            <div class="host-details">
-              <h2 id="host-name">Ведущий</h2>
-              <div class="room-info-small">
-                <span class="room-code-badge" id="current-room-code"
-                  >ABCD12</span
-                >
-                <span class="players-count" id="host-players-count"
-                  >0 игроков</span
-                >
-              </div>
-            </div>
-          </div>
-
-          <div class="host-controls">
-            <button id="end-game-btn" class="btn btn-danger">
-              <i class="fas fa-stop"></i> Завершить игру
-            </button>
-          </div>
-        </div>
-
-        <div class="game-controls-grid">
-          <!-- Управление вопросом -->
-          <div class="control-section">
-            <h3><i class="fas fa-question-circle"></i> Вопрос</h3>
-            <div class="control-group">
-              <textarea
-                id="question-input"
-                placeholder="Введите вопрос..."
-                rows="4"
-              ></textarea>
-              <div class="image-upload">
-                <input
-                  type="file"
-                  id="question-image-input"
-                  accept="image/*"
-                  hidden
-                />
-                <label for="question-image-input" class="btn btn-secondary">
-                  <i class="fas fa-image"></i> Прикрепить картинку
-                </label>
-                <button id="clear-image-btn" class="btn btn-danger">
-                  <i class="fas fa-times"></i> Убрать
-                </button>
-              </div>
-              <div id="image-preview" class="image-preview"></div>
-              <div class="question-actions">
-                <button id="show-question-btn" class="btn btn-primary">
-                  <i class="fas fa-eye"></i> Показать вопрос
-                </button>
-                <button id="hide-question-btn" class="btn btn-secondary">
-                  <i class="fas fa-eye-slash"></i> Скрыть вопрос
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <!-- Управление баллами -->
-          <div class="control-section">
-            <h3><i class="fas fa-star"></i> Баллы</h3>
-            <div class="control-group">
-              <select id="player-select" class="player-select">
-                <option value="">Выберите игрока</option>
-              </select>
-              <div class="score-controls">
-                <button id="add-point-btn" class="btn btn-success">
-                  <i class="fas fa-plus"></i> +1 балл
-                </button>
-                <button id="subtract-point-btn" class="btn btn-danger">
-                  <i class="fas fa-minus"></i> -1 балл
-                </button>
-                <button id="reset-player-btn" class="btn btn-warning">
-                  <i class="fas fa-redo"></i> Сбросить
-                </button>
-              </div>
-              <div class="active-player-info" id="active-player-info">
-                <!-- Информация об активном игроке появится здесь -->
-              </div>
-            </div>
-          </div>
-
-          <!-- Супер игра -->
-          <div class="control-section">
-            <h3><i class="fas fa-trophy"></i> Супер игра</h3>
-            <div class="control-group">
-              <div class="super-game-info" id="super-game-info">
-                <p>Определится в конце игры</p>
-              </div>
-              <textarea
-                id="super-game-question"
-                placeholder="Вопрос для супер игры..."
-                rows="3"
-              ></textarea>
-              <button id="start-super-game-btn" class="btn btn-super">
-                <i class="fas fa-crown"></i> Начать супер игру
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Панель игрока -->
-      <div id="player-panel" class="player-panel">
-        <div class="player-header">
-          <div class="player-info">
-            <div class="player-avatar" id="player-avatar-display">👨‍💼</div>
-            <div class="player-details">
-              <h2 id="player-name">Игрок</h2>
-              <div class="player-score">
-                Баллы: <span id="player-score-value">0</span>
-              </div>
-            </div>
-          </div>
-
-          <div class="player-room-info">
-            <div class="room-name" id="player-room-name">Комната: ABCD12</div>
-            <button id="leave-room-btn" class="btn btn-secondary">
-              <i class="fas fa-sign-out-alt"></i> Выйти
-            </button>
-          </div>
-        </div>
-
-        <div class="player-main">
-          <div class="buzzer-container">
-            <button id="buzzer-btn" class="buzzer-btn" disabled>
-              <i class="fas fa-bell"></i>
-              <span class="buzzer-text">ОЖИДАНИЕ ВОПРОСА</span>
-            </button>
-            <div class="buzzer-status" id="buzzer-status">
-              Ждите, когда ведущий покажет вопрос
-            </div>
-          </div>
-
-          <div class="player-chat">
-            <div class="chat-header">
-              <h4><i class="fas fa-comments"></i> Чат комнаты</h4>
-            </div>
-            <div class="chat-messages" id="chat-messages"></div>
-            <div class="chat-input">
-              <input
-                type="text"
-                id="chat-input"
-                placeholder="Введите сообщение..."
-              />
-              <button id="send-chat-btn" class="btn btn-primary">
-                <i class="fas fa-paper-plane"></i>
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Список игроков -->
-      <div class="players-section">
-        <div class="section-header">
-          <h3><i class="fas fa-users"></i> Игроки в комнате</h3>
-          <div class="players-count" id="players-count">0/6</div>
-        </div>
-        <div class="players-grid" id="players-container">
-          <!-- Игроки будут добавлены динамически -->
-        </div>
-      </div>
-
-      <!-- Область вопроса -->
-      <div class="question-section">
-        <div class="section-header">
-          <h3><i class="fas fa-question-circle"></i> Текущий вопрос</h3>
-        </div>
-        <div class="question-display-area">
-          <div class="question-text" id="question-display">
-            Вопрос появится здесь...
-          </div>
-          <div class="question-image" id="question-image-display"></div>
-        </div>
-      </div>
-
-      <!-- Модальное окно супер игры -->
-      <div id="super-game-modal" class="modal">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h2><i class="fas fa-crown"></i> СУПЕР ИГРА</h2>
-          </div>
-          <div class="modal-body">
-            <div class="winner-announcement">
-              <div class="winner-avatar" id="winner-avatar">👑</div>
-              <h3 id="winner-name">Игрок 1</h3>
-              <div class="winner-score">
-                Текущие баллы: <span id="winner-score">10</span>
-              </div>
-            </div>
-
-            <div class="super-game-question-display">
-              <h4>Вопрос для супер игры:</h4>
-              <p id="super-game-question-display">Здесь будет вопрос...</p>
-              <div id="super-game-image"></div>
-            </div>
-
-            <div class="modal-actions">
-              <button id="accept-super-game-btn" class="btn btn-super">
-                <i class="fas fa-check-double"></i> Принять вызов
-              </button>
-              <button id="decline-super-game-btn" class="btn btn-secondary">
-                <i class="fas fa-times"></i> Отказаться
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Уведомления -->
-    <div id="notifications"></div>
-
-    <!-- Подключение Socket.IO клиент -->
+    
     <script src="/socket.io/socket.io.js"></script>
     <script src="client.js"></script>
-  </body>
+</body>
 </html>
