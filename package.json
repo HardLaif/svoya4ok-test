@@ -1,7 +1,7 @@
 {
-  "name": "svoya-igra-render",
+  "name": "svoya-igra-final",
   "version": "1.0.0",
-  "description": "Своячок чок чок",
+  "description": "Своячок чок чок чок",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
